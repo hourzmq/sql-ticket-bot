@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Login — SQL TICKET{% endblock %}
+{% block body_class %}page-login{% endblock %}
+{% block body %}
+<div class="login-scene" aria-hidden="true">
+  <div class="login-orb login-orb--1"></div>
+  <div class="login-orb login-orb--2"></div>
+  <div class="login-orb login-orb--3"></div>
+  <div class="login-grid"></div>
+</div>
+<div class="login-wrap">
+  <div class="login-card" role="main">
+    <div class="login-brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <div>
+        <span class="login-brand-title">SQL TICKET</span>
+        <span class="login-brand-sub">Control dashboard</span>
+      </div>
+    </div>
+    <h1 class="login-heading">Sign in</h1>
+    <p class="login-lead muted">Enter your dashboard password to continue.</p>
+    <form method="post" class="login-form">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required />
+      {% if error %}
+      <div class="alert" role="alert">{{ error }}</div>
+      {% endif %}
+      <div class="login-actions">
+        <button class="btn btn-primary btn-login" type="submit">
+          <span>Continue</span>
+        </button>
+      </div>
+    </form>
+    <footer class="login-footer muted">
+      <span>Developer: ♔SQL父HourZmq♔</span>
+      <span class="login-footer-dot" aria-hidden="true">·</span>
+      <span>Owner: ♔SQL父eclipsiumx♔</span>
+    </footer>
+  </div>
+</div>
+{% endblock %}

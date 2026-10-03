@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block title %}SQL TICKET — Dashboard{% endblock %}
+{% block body_class %}page-dashboard{% endblock %}
+{% block body %}
+<div id="global-progress" class="global-progress" aria-hidden="true"><div class="global-progress-bar"></div></div>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <div class="brand-text">
+      <span class="brand-name">SQL TICKET</span>
+      <span class="brand-meta muted">Guild {{ guild_id }}</span>
+    </div>
+  </div>
+  <div class="row topbar-actions">
+    <span class="pill {% if cfg.bot_paused %}bad{% else %}ok{% endif %}">
+      {% if cfg.bot_paused %}Paused{% else %}Live{% endif %}
+    </span>
+    <a class="btn btn-ghost" href="{{ url_for('logout') }}">Logout</a>
+  </div>
+</header>
+
+<nav class="dash-nav" aria-label="Dashboard sections">
+  <a href="#overview">Overview</a>
+  <a href="#bot-stats">Bot stats</a>
+  <a href="#panel">Panel</a>
+  <a href="#roles">Roles</a>
+  <a href="#core">Channels</a>
+  <a href="#console">Console</a>
+</nav>
+
+<main class="shell shell-animate" data-live-console="1">
+  <div class="dash-top-grid">
+    <section id="overview" class="card anchor-card dash-card-elevated">
+      <div class="card-head">
+        <div>
+          <h2>Overview</h2>
+          <p class="muted card-desc">Ticket totals and database footprint.</p>
+        </div>
+        <form
+          method="post"
+          action="{{ url_for('reset_overview_metrics') }}"
+          data-ajax="1"
+          class="card-head-actions"
+          onsubmit="return confirm('Reset Overview counters and Bot stats snapshot in MongoDB? Open tickets, logs, and settings are not removed.');"
+        >
+          <button type="submit" class="btn btn-danger btn-compact">Reset MongoDB Data</button>
+        </form>
+      </div>
+      <div class="stats-row stats-row-tight">
+        <div class="stat stat-glow"><b>{{ open_tickets|length }}</b><span class="muted">Open tickets</span></div>
+        <div class="stat stat-glow"><b>{{ stats.get('tickets_created_total', 0) }}</b><span class="muted">Created (total)</span></div>
+        <div class="stat stat-glow"><b>{{ stats.get('tickets_closed_total', 0) }}</b><span class="muted">Closed (total)</span></div>
+        <div class="stat stat-glow"><b>{{ counts.collections }}</b><span class="muted">Collections</span></div>
+      </div>
+    </section>
+
+    <section id="bot-stats" class="card anchor-card dash-card-elevated">
+      <div class="card-head card-head--simple">
+        <div>
+          <h2>Bot stats <span class="live-pill">Live</span></h2>
+          <p class="muted card-desc">Refreshed periodically from the bot process.</p>
+        </div>
+      </div>
+      <div id="live-snapshot" class="stats-row stats-row-tight">
+        <div class="stat mini stat-glow"><b>{{ snap.get('latency_ms', '—') }}</b><span class="muted">Latency (ms)</span></div>
+        <div class="stat mini stat-glow"><b>{{ snap.get('guild_member_count', '—') }}</b><span class="muted">Members</span></div>
+        <div class="stat mini stat-glow"><b>{{ snap.get('open_ticket_count', open_tickets|length) }}</b><span class="muted">Open (sync)</span></div>
+        <div class="stat mini stat-glow"><b>{{ counts.logs }}</b><span class="muted">Log rows</span></div>
+      </div>
+      <p class="muted snap-updated">Last snapshot: {{ snap.get('updated_at') or '—' }}</p>
+    </section>
+  </div>
+
+  <section class="card anchor-card">
+    <h2>Open tickets</h2>
+    <p class="muted card-desc">Active channels tracked in MongoDB.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Channel</th>
+            <th>User</th>
+            <th>Type</th>
+            <th>Parent category</th>
+            <th>Opened</th>
+            <th>Claimed</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in open_tickets %}
+          <tr>
+            <td><code>{{ t.channel_id }}</code></td>
+            <td><code>{{ t.user_id }}</code></td>
+            <td>{{ t.type_id }}</td>
+            <td class="muted">{{ t.parent_category_id or '—' }}</td>
+            <td class="muted">{{ t.opened_at }}</td>
+            <td class="muted">{{ t.claimed_by or '—' }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="muted">No open tickets.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="panel" class="card anchor-card">
+    <h2>Panel editor</h2>
+    <p class="muted card-desc">Ticket panel embed, dropdown, buttons, and close DM.</p>
+
+    <h3 class="subh">Embed images & author</h3>
+    <form method="post" action="{{ url_for('save_panel_embed') }}" data-ajax="1">
+      <div class="grid two">
+        <div>
+          <label>Thumbnail URL</label>
+          <input name="thumbnail_url" type="text" value="{{ (cfg.panel_embed or {}).get('thumbnail_url', '') }}" />
+        </div>
+        <div>
+          <label>Large image URL</label>
+          <input name="image_url" type="text" value="{{ (cfg.panel_embed or {}).get('image_url', '') }}" />
+        </div>
+        <div>
+          <label>Author name</label>
+          <input name="author_name" type="text" value="{{ (cfg.panel_embed or {}).get('author_name', '') }}" />
+        </div>
+        <div>
+          <label>Author icon URL</label>
+          <input name="author_icon_url" type="text" value="{{ (cfg.panel_embed or {}).get('author_icon_url', '') }}" />
+        </div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">Save</button></div>
+    </form>
+
+    <h3 class="subh">Main text & colors</h3>
+    <form method="post" action="{{ url_for('save_text') }}" data-ajax="1">
+      <label>Panel title</label>
+      <input name="panel_title" type="text" value="{{ cfg.panel_title }}" />
+      <label>Panel description</label>
+      <textarea name="panel_description" rows="3">{{ cfg.panel_description }}</textarea>
+      <label>Panel footer</label>
+      <input name="panel_footer" type="text" value="{{ cfg.panel_footer }}" />
+      <label>Welcome title (inside ticket)</label>
+      <input name="welcome_title" type="text" value="{{ cfg.welcome_title }}" />
+      <label>Welcome body</label>
+      <textarea name="welcome_body" rows="3">{{ cfg.welcome_body }}</textarea>
+      <label>Embed color (decimal)</label>
+      <input name="panel_color" type="text" value="{{ cfg.panel_color }}" />
+      <div class="form-actions"><button class="btn btn-primary" type="submit">Save</button></div>
+    </form>
+
+    <h3 class="subh">Dropdown section (JSON)</h3>
+    <p class="muted small-print">Keys: <code>enabled</code>, <code>placeholder</code>, <code>options</code> (each: <code>id</code>, <code>label</code>, <code>description</code>, <code>emoji</code>, required <code>category_id</code> — Discord category ID for that ticket type).</p>
+    <form method="post" action="{{ url_for('save_dropdown_json') }}" data-ajax="1">
+      <textarea name="panel_dropdown_json" rows="16">{{ dd_json }}</textarea>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">Save dropdown</button></div>
+    </form>
+
+    <h3 class="subh">Buttons section (JSON)</h3>
+    <p class="muted small-print">Keys: <code>enabled</code>, <code>rows</code>. Each button: <code>id</code>, <code>label</code>, optional <code>emoji</code>, <code>style</code>, <code>type_id</code>, required <code>category_id</code>.</p>
+    <form method="post" action="{{ url_for('save_buttons_json') }}" data-ajax="1">
+      <textarea name="panel_buttons_json" rows="16">{{ pb_json }}</textarea>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">Save buttons</button></div>
+    </form>
+
+    <h3 class="subh">Close DM (JSON)</h3>
+    <p class="muted small-print">Placeholders: <code>{channel_name}</code> and <code>{reason}</code>. Set <code>enabled</code> false to disable DMs.</p>
+    <form method="post" action="{{ url_for('save_close_dm_json') }}" data-ajax="1">
+      <textarea name="close_dm_json" rows="10">{{ cdm_json }}</textarea>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">Save close DM</button></div>
+    </form>
+  </section>
+
+  <section id="roles" class="card anchor-card">
+    <h2>Roles</h2>
+    <p class="muted card-desc"><strong>Admin roles</strong> see every ticket. Support matrix maps roles to category IDs.</p>
+    <form method="post" action="{{ url_for('save_admin_roles') }}" data-ajax="1">
+      <label>Admin Role IDs (space / comma)</label>
+      <textarea name="admin_role_ids" rows="3">{{ (cfg.admin_role_ids or [])|join(' ') }}</textarea>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">Save admin roles</button></div>
+    </form>
+    <form method="post" action="{{ url_for('save_support_matrix') }}" data-ajax="1" class="form-spaced">
+      <label>Support roles JSON</label>
+      <textarea name="support_roles_json" rows="12">{{ sr_json }}</textarea>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">Save support</button></div>
+    </form>
+  </section>
+
+  <section id="core" class="card anchor-card">
+    <h2>Channels & limits</h2>
+    <p class="muted card-desc">Each dropdown option and panel button needs its own <code>category_id</code> in JSON. No global default category.</p>
+    <form method="post" action="{{ url_for('save_core') }}" data-ajax="1">
+      <label>Log channel ID</label>
+      <input name="log_channel_id" type="text" value="{{ cfg.log_channel_id or '' }}" />
+      <label>Transcript channel ID</label>
+      <input name="transcript_channel_id" type="text" value="{{ cfg.transcript_channel_id or '' }}" />
+      <label>Max open tickets per user</label>
+      <input name="max_open_per_user" type="number" min="1" max="10" value="{{ cfg.max_open_per_user or 3 }}" />
+      <label class="row row-check">
+        <input type="checkbox" name="bot_paused" {% if cfg.bot_paused %}checked{% endif %} />
+        <span>Pause new tickets</span>
+      </label>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">Save</button></div>
+    </form>
+
+    <h3 class="subh">Post panel from dashboard</h3>
+    <form method="post" action="{{ url_for('queue_panel') }}" data-ajax="1">
+      <label>Text channel ID</label>
+      <input name="post_channel_id" type="text" required placeholder="Channel ID" />
+      <div class="form-actions row">
+        <button class="btn btn-primary" type="submit">Queue panel post</button>
+        {% if cfg.pending_post_panel_channel_id %}
+        <span class="pill">Pending: {{ cfg.pending_post_panel_channel_id }}</span>
+        {% endif %}
+      </div>
+    </form>
+
+    <h3 class="subh">Blacklist</h3>
+    <form method="post" action="{{ url_for('save_blacklist') }}" data-ajax="1">
+      <textarea name="blacklist_user_ids" rows="5">{{ (cfg.blacklist_user_ids or [])|join(' ') }}</textarea>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">Save blacklist</button></div>
+    </form>
+  </section>
+
+  <section id="console" class="card anchor-card">
+    <h2>Console</h2>
+    <p class="muted card-desc">Recent bot logs (auto-refresh).</p>
+    <pre id="console-out" class="console"></pre>
+    <p class="muted small-print" style="margin-top: 10px">MongoDB: open tickets={{ counts.open_tickets }}, logs={{ counts.logs }}, collections={{ counts.collections }}</p>
+  </section>
+
+  <section class="card anchor-card card-credits">
+    <h2>Credits</h2>
+    <p class="muted">Developer: <strong>♔SQL父HourZmq♔</strong></p>
+    <p class="muted">Owner: <strong>♔SQL父eclipsiumx♔</strong></p>
+  </section>
+</main>
+{% endblock %}

@@ -1,0 +1,5 @@
+discord.py>=2.3.2,<3
+Flask>=3.0.0
+python-dotenv>=1.0.0
+aiohttp>=3.9.0
+pymongo>=4.6.0

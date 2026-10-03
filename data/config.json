@@ -1,0 +1,45 @@
+{
+  "guild_id": null,
+  "ticket_category_id": 1490306207284461671,
+  "support_role_ids": [
+    1467519850938106029
+  ],
+  "staff_role_ids": [
+    1483448031516037130
+  ],
+  "log_channel_id": 1452752336022802488,
+  "transcript_channel_id": 1452752336022802488,
+  "panel_channel_id": 1375136122132496509,
+  "panel_message_id": 1503820784572039328,
+  "max_open_per_user": 3,
+  "ticket_counter": 1,
+  "blacklist_user_ids": [],
+  "panel_title": "SQL TICKET",
+  "panel_description": "Choose a category below to open a private support ticket.",
+  "panel_color": 12852794,
+  "panel_footer": "SQL Ticket System",
+  "welcome_title": "Ticket opened",
+  "welcome_body": "Describe your issue; staff will assist shortly.",
+  "ticket_types": [
+    {
+      "id": "support",
+      "label": "General Support",
+      "description": "Help with general questions",
+      "emoji": "⚔️"
+    },
+    {
+      "id": "purchase",
+      "label": "Purchase / Payment",
+      "description": "Billing or orders",
+      "emoji": "🛒"
+    },
+    {
+      "id": "report",
+      "label": "Report",
+      "description": "Report a user or issue",
+      "emoji": "🛡️"
+    }
+  ],
+  "bot_paused": false,
+  "pending_post_panel_channel_id": null
+}
